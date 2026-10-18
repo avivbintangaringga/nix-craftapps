@@ -2,9 +2,9 @@
 
 Install the [ArtCraft](https://getartcraft.com/apps) Crafting Apps with Nix.
 
-[storytold](https://github.com/storytold) makes twelve native creative apps,
+[storytold](https://github.com/storytold) makes thirteen native creative apps,
 written in pure Rust. Each is an open-source, clean-room take on a familiar
-professional tool. This flake packages all twelve for Linux. It gives you
+professional tool. This flake packages all thirteen for Linux. It gives you
 packages to run directly, a **NixOS module** and a **Home Manager module**,
 and you choose which apps to install.
 
@@ -16,6 +16,7 @@ and you choose which apps to install.
 | `pdfcraft`    | Acrobat       | Read, organize and edit PDFs       |
 | `effectcraft` | After Effects | Motion graphics and visual effects |
 | `designcraft` | InDesign      | Page layout and publishing         |
+| `figcraft`    | Figma         | Interface design and prototyping   |
 | `filmcraft`   | Premiere Pro  | Video editing                      |
 | `gridcraft`   | Excel         | Spreadsheets                       |
 | `soundcraft`  | Pro Tools     | Audio recording and editing        |
@@ -71,7 +72,7 @@ nix shell github:olafkfreund/nix-craftapps#deckcraft
 deckcraft-cli --version
 ```
 
-To have all twelve in a temporary shell:
+To have all thirteen in a temporary shell:
 
 ```sh
 nix shell github:olafkfreund/nix-craftapps
@@ -453,7 +454,7 @@ described in [Updating](#updating), or pin one app to an older build with
 
 These are upstream's prebuilt binaries, not source builds: the
 `sourceProvenance` in each package's `meta` says `binaryNativeCode`. Building
-from source would mean compiling twelve large Rust workspaces on every daily
+from source would mean compiling thirteen large Rust workspaces on every daily
 release.
 
 To work on this repository, start with [AGENTS.md](AGENTS.md). GPU details
