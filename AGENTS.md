@@ -21,10 +21,10 @@ outputs are:
 apps.json                 registry: version, tag, url + SRI hash per system, per app
 package.nix               the ONE generic builder (fetchurl + autoPatchelfHook + wrapper)
 default.nix               { pkgs }: maps apps.json → packages, + craftapps-all
-flake.nix                 outputs; checks build every app, test each CLI, eval the module
-modules/common.nix        shared options (enable, enableAll, apps.<n>.{enable,package})
-modules/nixos.nix         + linkFonts (fonts.fontDir + /usr/share/fonts tmpfiles link)
-modules/home-manager.nix  home.packages; no linkFonts (HM cannot write /usr/share)
+flake.nix                 outputs; checks build every app, test each CLI and MCP server, eval both modules
+modules/common.nix        shared options (enable, enableAll, apps.<n>.{enable,package,mcp.args}, mcp.*)
+modules/nixos.nix         + linkFonts (fonts.fontDir + /usr/share/fonts link), /etc/craftapps/mcp.json, HM sharedModules
+modules/home-manager.nix  home.packages, programs.mcp; no linkFonts (HM cannot write /usr/share)
 scripts/update.py         refreshes apps.json from GitHub releases (stdlib only)
 .github/workflows/ci.yml      nix flake check on x86_64 and aarch64 runners
 .github/workflows/update.yml  daily update.py → flake check → PR → dispatch ci.yml
@@ -33,7 +33,7 @@ scripts/update.py         refreshes apps.json from GitHub releases (stdlib only)
 ## Commands
 
 ```sh
-nix flake check -L                  # builds all 12, runs the CLI + module checks
+nix flake check -L                  # builds all 12, runs the cli, mcp, module + hm-module checks
 nix build .#photocraft              # one app
 nix fmt                             # nixfmt
 python3 scripts/update.py --self-test   # offline tests of the updater
@@ -75,6 +75,8 @@ When storytold publishes a 13th app:
 2. Run `python3 scripts/update.py <newapp>`. It writes the `apps.json` entry.
 3. Run `nix build .#<newapp>`. autoPatchelf must report `0 dependencies could
    not be satisfied`, and `<newapp>-cli --version` must print the version.
+   Also check that `<newapp>-cli mcp` answers `initialize` headless; the
+   `mcp` check does this.
 4. Launch the GUI on a real session. Run `timeout 8 ./result/bin/<newapp>`;
    exit status 124 means it stayed up. If it panics about a missing library,
    add that library to `runtimeDependencies` in `package.nix`.
@@ -107,6 +109,10 @@ When storytold publishes a 13th app:
   `docs/GPU.md` promises users exactly that. If you change GPU-related
   behaviour, update that page's tables and its "What has been tested"
   section.
+- **MCP.** The servers are stdio (`<app>-cli mcp`), so there is no service.
+  Never write `/etc/claude-code/managed-mcp.json`; it takes exclusive
+  control of MCP. Defaults that are not headless go in `mcpArgs` in
+  `modules/common.nix`.
 - **Launching a GUI.** Running a GUI with an unknown flag such as `--help`
   opens a window instead of printing help. Use the `-cli` binary for
   anything headless.
