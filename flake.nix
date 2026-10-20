@@ -68,9 +68,15 @@
               default = { };
             };
           };
-          skillStub.options.programs.claude-code.skills = lib.mkOption {
-            type = with lib.types; either (attrsOf (either lines path)) path;
-            default = { };
+          skillStub.options.programs.claude-code = {
+            skills = lib.mkOption {
+              type = with lib.types; either (attrsOf (either lines path)) path;
+              default = { };
+            };
+            rules = lib.mkOption {
+              type = with lib.types; attrsOf (either lines path);
+              default = { };
+            };
           };
           node = lib.nixosSystem {
             inherit system;
@@ -177,6 +183,16 @@
                   { programs.craftapps.skill.enable = lib.mkForce false; }
                 ];
               };
+              withRulesDir = eval {
+                imports = [
+                  packagesOpt
+                  skillStub
+                  {
+                    options.programs.claude-code.rulesDir = lib.mkOption { type = lib.types.nullOr lib.types.path; };
+                    config.programs.claude-code.rulesDir = ./skills;
+                  }
+                ];
+              };
               # The NixOS module's per-user module; a user's own entry must replace the shared one.
               shared = lib.evalModules {
                 modules = node.config.home-manager.sharedModules ++ [
@@ -211,6 +227,11 @@
                 && withSkill.config.programs.claude-code.skills ? craftapps
                 && shared.config.programs.claude-code.skills ? craftapps
                 && skillOff.config.programs.claude-code.skills == { }
+                && withSkill.config.programs.claude-code.rules ? craftapps
+                && shared.config.programs.claude-code.rules ? craftapps
+                && skillOff.config.programs.claude-code.rules == { }
+                && withRulesDir.config.programs.claude-code.rules == { }
+                && withRulesDir.config.programs.claude-code.skills ? craftapps
                 && off.config.home-manager.sharedModules == [ ]
                 && !(off.config.environment.etc ? "craftapps/mcp.json");
             in
@@ -241,6 +262,19 @@
               in
               "HOME=$TMPDIR ${app}/bin/${name}-cli --version | grep -qF ${app.version}"
             ) names}
+            touch $out
+          '';
+          skill = pkgs.runCommand "craftapps-skill-check" { } ''
+            export LC_ALL=C.UTF-8
+            f=${./skills/craftapps/SKILL.md}
+            fm=$(sed -n '2,/^---$/p' "$f")
+            grep -qx 'name: craftapps' <<<"$fm" || { echo "skill name must be craftapps"; exit 1; }
+            desc=$(sed -n 's/^description: "\(.*\)"$/\1/p' <<<"$fm")
+            [[ -n $desc ]] || { echo "skill description missing or not double-quoted"; exit 1; }
+            echo "skill description: ''${#desc} chars"
+            (( ''${#desc} <= 1024 )) || { echo "skill description is ''${#desc} chars, max 1024"; exit 1; }
+            [[ $desc != *[\<\>]* ]] || { echo "skill description must not contain < or >"; exit 1; }
+            [[ $desc != *\"* ]] || { echo "skill description must not contain a double quote"; exit 1; }
             touch $out
           '';
         }
